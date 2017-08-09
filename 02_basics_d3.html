@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>D3 tutorial</title>
+	<script type="text/javascript" src="js/d3.min.js"></script>
+	<script src="js/jquery.min.js"></script>
+
+	<style type="text/css">
+		div[id] {
+			float: left;
+			margin: 5px;
+			padding: 10px;
+			border: 1px solid #000;
+			position: relative;
+		}
+		#treeLayout form {
+			display: none;
+			position: absolute;
+			width: 100px;
+			height: 50px;
+		}
+		.link {
+		  fill: none;
+		  stroke: #ccc;
+		  stroke-width: 2px;
+		}
+		.bubble {
+		  fill: rgb(200,200,255);
+		  opacity: .35;
+		  stroke: #ccc;
+		  stroke-width: 2px;
+		}
+		.bar text {
+		  fill: #fff;
+		  font: 10px sans-serif;
+		}
+	</style>
+</head>
+<body>
+	<h2>Based in this tutorials <a href="https://www.youtube.com/watch?v=n5NcCoa9dDU&list=PL6il2r9i3BqH9PmbOf5wA5E1wOG3FT22p" target="_blank">open tutorial here</a> rewritten in v4</h2>
+	<p><strong>Click on a square to expand it</strong></p>
+
+	<div id="extra"></div>
+	<div id="map"></div>
+	<div id="treemap"></div>
+	<div id="histogram"></div>
+	<div id="pack-bubble-layout"></div>
+	<div id="treeLayout">
+		<form>
+		  <label><input type="radio" name="mode" value="tree" checked> Tree</label><br>
+		  <label><input type="radio" name="mode" value="cluster"> Cluster</label>
+		</form>
+	</div>
+	<div id="tree"></div>
+	<div id="donut"></div>
+	<div style="clear:both;"></div>
+	<div id="arc"></div>
+	<div id="path"></div>
+	<div id="working-with-external"></div>
+	<div id="transitions"></div>
+	<div id="concept-enter-update-exit"></div>
+	<div id="bars"></div>
+	<div id="shapes"></div>
+
+
+	<script type="text/javascript">
+		function Container(target) {
+			this.width = 500;
+			this.height = 500;
+			this.scaleMin = .1;
+			this.scaleMax = 1;
+			this.scale = this.scaleMin;
+
+			self = this;
+
+			this.canvas = d3.select(target)
+					   .attr("data-scale", this.scale)
+					   .on("click", 
+					   		function() {
+								event.stopPropagation();
+								$( "div" ).each(function( index ) {
+								  if( "#" + $(this).attr('id') == target ){
+								  	var scale = $(target).data('scale') == self.scaleMin ? ( self.scaleMax * (target == '#map' || target == '#extra' ? 2 : 1) ) : self.scaleMin;
+								  	changeScale(target, scale, self.width, self.height);
+								  } else {
+								  	changeScale("#" + $(this).attr('id'), self.scaleMin, self.width, self.height);
+								  }
+								});
+							} 
+					   	)
+					   .append("svg")
+					   .attr("width", this.width * this.scale)
+					   .attr("height", this.height * this.scale)
+					   .append("g")
+					   .attr("class", "main")
+					   .attr("transform", "scale(" + this.scale + ")");
+		};
+
+		function changeScale(target, scale, width, height) {
+			$(target).data('scale', scale);
+			d3.select(target + " svg").transition()
+			    .duration(1000)
+				   .attr("width", width * scale)
+				   .attr("height", height * scale)
+			d3.select(target + " .main").transition()
+			    .duration(1000)
+			    .attr("transform", "scale(" + scale + ")")
+			    .on("start", function() {
+
+				  	if( target === '#treeLayout' ) {
+				  		if ( $(target).data('scale') == self.scaleMin ) {
+				  			$('#treeLayout form').hide(500);
+				  		} else {
+				  			$('#treeLayout form').show(1000);
+				  		}
+				  	}
+
+			    });
+		}
+
+/*---------------------------------------Video 3--------------------------------------------------*/
+
+		var shapes = new Container("#shapes").canvas;
+
+		var circle = shapes.append("circle")
+						.attr("cx",250)
+						.attr("cy",250)
+						.attr("r",50)
+						.attr("fill", "red");
+
+		var rect = shapes.append("rect")
+						.attr("width",100)
+						.attr("height",50);
+
+		var line = shapes.append("line")
+						.attr("x1",0)
+						.attr("y1",100)
+						.attr("x2",400)
+						.attr("y2",400)
+						.attr("stroke","green")
+						.attr("stroke-width", 10);
+
+/*---------------------------------------Video 4, 5 and 6--------------------------------------------------*/
+
+		var barsObject = new Container("#bars");
+
+		var dataArray = [20, 40, 50, 200];
+
+		var widthScale = d3.scaleLinear()
+		               		.domain([0, 200])
+		               		.range([0, barsObject.width - 50]);
+
+		var barsContainer = barsObject.canvas.append("g").attr("transform", "translate(25,0)");
+
+		var color = d3.scaleLinear()
+		               		.domain([0, 200])
+		               		.range(["red", "blue"]);
+
+		var axis = d3.axisBottom().scale(widthScale);
+
+		var bars = barsContainer
+		                .selectAll("rect")
+						.data(dataArray)
+						.enter()
+							.append("rect")
+							.attr("width", 0)
+							.attr("height",50)
+							.style("fill", function(d) {return color(d);})
+							.attr("y", function(d, i) {return i * 100;});
+
+		bars.transition()
+			.duration(1000)
+			.attr("width", function(d) {return widthScale(d);})	
+
+		barsContainer.append("g")
+		   .attr("transform", "translate(0,400)")
+		   .call(axis);
+
+/*---------------------------------------Video 7--------------------------------------------------*/
+
+		var enterUpdateExit = new Container("#concept-enter-update-exit").canvas;
+
+		var data = [50, 150];
+
+		var circle1 = enterUpdateExit.append("circle")
+							.attr("cx",150)
+							.attr("cy",50)
+							.attr("r",25);
+
+		var circles = enterUpdateExit.selectAll("circle")
+						.attr("fill", "red")    // data = dom update elements (red color circle 2)
+						.data(data)
+						.enter()                // more data than dom elements (the element is created becase does't exist any circle before. For example, if exist 1 circle before and 3 element, this method only creates 2 last circles)(here circle 2 is created)
+							.append("circle")
+							.attr("cx",50)
+							.attr("cy", function(d) {return d;})
+							.attr("r",25)
+							.attr("fill", "green");
+
+		var circle3 = enterUpdateExit.append("circle")
+							.attr("cx",150)
+							.attr("cy",150)
+							.attr("r",25);
+
+		var circles = enterUpdateExit.selectAll("circle")
+						.data(data)
+						.exit()
+						.attr("fill", "blue"); // data < dom extra circles in blue. (circle 3 now is blue)
+
+/*---------------------------------------Video 8--------------------------------------------------*/
+
+		var transitions = new Container("#transitions").canvas;
+
+		var data = [50, 150];
+
+
+		var circle = transitions.append("circle")
+							.attr("cx",50)
+							.attr("cy",50)
+							.attr("r",25)
+							.attr("fill", "blue");
+
+		var start = transitions.append("g")
+							   .attr("transform", "translate(400,400)");
+
+		var ellipse = start.append("ellipse")
+		     .attr("cx","0")
+		     .attr("cy","0")
+		     .attr("rx","35")
+		     .attr("ry","35")
+		     .attr("fill","#d1d1d1")
+		     .on('click',transition);
+  
+		start.append("text")
+		     .attr("x","0")
+		     .attr("y","5")
+		     .attr("text-anchor","middle")
+		     .text("click me")
+		     .on('click',transition);
+
+		function transition() {
+			event.stopPropagation();
+
+			start.transition()
+				.duration(1000)
+				.style("display", "none");
+
+			circle.transition()
+				.duration(1000)
+				.attr("cx",150)
+				.attr("cy",150)
+				.attr("fill", "red")
+				.transition()
+				.duration(1000)
+				.attr("cx",250)
+				.attr("r",10)
+				.attr("fill", "green")
+				.transition()
+				.duration(1000)
+				.attr("cx",50)
+				.attr("cy",50)
+				.attr("r",25)
+				.on("start", function() {d3.select(this).attr("fill", "yellow")})
+				.on("end", function() {
+					d3.select(this).attr("fill", "gray");
+					start.transition()
+						.duration(1000)
+						.style("display", "block");
+				});
+		}
+
+/*---------------------------------------Video 9--------------------------------------------------*/
+{
+		var data = [10, 20, 30, 40, 50, 60, 70];
+		console.log("shif", data.shift()); // display first value and remove from the array.
+		console.log("sort",data.sort(d3.descending)); // oreder by descending
+		console.log(d3.min(data));
+		console.log(d3.max(data));
+		console.log(d3.extent(data)); // min and max
+		console.log(d3.sum(data));
+		console.log(d3.mean(data));   // media / average
+		console.log(d3.median(data)); // medina
+		console.log(d3.shuffle(data)); // barajar
+		console.log(d3.shuffle(data)); // barajar
+
+}
+/*---------------------------------------Video 10--------------------------------------------------*/
+
+		//d3.csv("data/mydata.csv", function(error, data) {   //works the same different text formating
+		d3.json("data/mydata.json", function(error, data) {
+			if (error) throw error;
+
+			var workingWithExternal = new Container("#working-with-external").canvas;
+
+			workingWithExternal.selectAll("rect")
+				.data(data)
+				.enter()
+					.append("rect")
+					.attr("width", function(d) {return d.age * 10;})
+					.attr("height", 45)
+					.style("fill", "blue")
+					.attr("y", function(d, i) {return i * 50;});
+
+			workingWithExternal.selectAll("text")
+				.data(data)
+				.enter()
+					.append("text")
+					.style("fill", "white")
+					.text(function(d) {return d.name;})
+					.attr("x", 10)
+					.attr("y", function(d, i) {return i * 50 + 25;});
+
+		});
+		   
+
+/*---------------------------------------Video 11--------------------------------------------------*/
+
+		var pathCanvas = new Container("#path").canvas;
+
+		var data = [
+			{"x": 10, "y": 200},
+			{"x": 400, "y": 60},
+			{"x": 50, "y": 270}
+		];
+
+		var group = pathCanvas.append("g")
+						.attr("transform", "translate(100,100)");
+
+		var line = d3.line()
+		             .x(function(d) { return d.x; })
+		             .y(function(d) { return d.y; })
+		             .curve(d3.curveLinear);
+
+		group.selectAll("p")
+			.data([data])
+			.enter()
+			.append("path")
+			.attr("d", line)
+			.attr("fill", "none")
+			.attr("stroke","black")
+			.attr("stroke-width",1);
+
+/*---------------------------------------Video 12--------------------------------------------------*/
+
+		var arcContainer = new Container("#arc").canvas;
+
+		var group = arcContainer.append("g")
+						.attr("transform", "translate(100,100)");
+
+		var r = 100;
+		var p = 2 * Math.PI;
+
+		var arc = d3.arc()
+		    .innerRadius(r - 20)
+		    .outerRadius(r)
+		    .startAngle(0)
+		    .endAngle(p - 1);
+
+		group
+			.append("path")
+			.attr("d", arc);
+
+/*---------------------------------------Video 13--------------------------------------------------*/
+		
+		var donut = new Container("#donut");
+
+		var data = [10, 50, 80];
+		var r = 150;
+		var p = 2 * Math.PI;
+
+		var color = d3.scaleOrdinal()
+		               		.range(["red", "blue","orange"]);
+
+		var group = donut.canvas.append("g")
+						.attr("transform", "translate(" + donut.width / 2 + "," + donut.height / 2 + ")");
+
+		var arc = d3.arc()
+		    .innerRadius(r - 50)  // donut
+		    .outerRadius(r);  
+
+		var arc2 = d3.arc()
+		    .innerRadius(0)    // pie
+		    .outerRadius(r);  
+
+		var pie = d3.pie()
+					.value(function(d) {return d;});
+
+		var dataPie = pie(data);
+
+		var arcs = group.selectAll("p")
+					.data(dataPie)
+					.enter()
+						.append("g")
+						.attr("class", "arc");
+
+		arcs.append("path")
+			.attr("d", arc)
+			.style("fill", function(d) {return color(d.data);});
+
+		arcs.append("text")
+			.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")";})
+			.attr("text-anchor", "middle")
+			.attr("font-size", "1.5em")
+			.attr("fill", "white")
+			.text(function(d) {return d.data;});
+
+/*----------------------------- Idea Video 14 scr d3 v4 -----------------------------------------*/
+		
+		var tree = new Container("#tree").canvas;
+
+		var diagonal1 = d3.linkHorizontal()
+						 .x(function(d) { return d.y; })
+   						 .y(function(d) { return d.x; });
+
+		var diagonal2 = d3.linkVertical()
+						 .x(function(d) { return d.y; })
+   						 .y(function(d) { return d.x; });
+
+
+		data = [{
+		  source: {x:0, y:0},
+		  target: {x:250, y:250}
+		},
+		{
+		  source: {x:0, y:50},
+		  target: {x:250, y:300}
+		},
+		{
+		  source: {x:0, y:150},
+		  target: {x:10, y:200}
+		}
+		];
+
+		tree.selectAll(null)
+		  .data(data)
+		  .enter()
+		  .append("path")
+		  .attr("fill", "none")
+		  .attr("stroke", "blue")
+		  .attr("d", diagonal1);
+
+		tree.selectAll(null)
+		  .data(data)
+		  .enter()
+		  .append("path")
+		  .attr("fill", "none")
+		  .attr("stroke", "red")
+		  .attr("d", diagonal2)
+		  .attr("transform", "translate(10,100)");
+
+/*-------------------------------------- Idea Video 15 scr d3 v4 ----------------------------------------*/
+/*------------------- based https://bl.ocks.org/d3noob/08ecb6ea9bb68ba0d9a7e89f344acec8 -----------------*/
+/*--------------------------- based https://bl.ocks.org/mbostock/4339184 --------------------------------*/
+
+		  function loadData(g, node) {
+
+			// adds the circle to the node
+			node.append("circle")
+			  .attr("r", 12)
+			  .style("fill", "#ccc")
+			  .style("stroke", "#999")
+			  .style("stroke-width", "1px");
+
+			// adds the text to the node
+			node.append("text")
+			  .attr("dy", ".35em")
+			  .attr("x", function(d) { return d.children ? 
+			    -14 : 14 })
+			  .style("text-anchor", function(d) { 
+			    return d.children ? "end" : "start"; })
+			  .text(function(d) { return d.data.name; });
+
+			node.append("text")
+			  .attr("dy", ".35em")
+			  .attr("x", 0)
+			  .style("text-anchor", "middle")
+			  .text(function(d) { return d.data.age; });
+		  }
+
+		  d3.json("data/treeData.json", function(error, treeData) {
+		    if (error) throw error;
+
+		    var treeLayout = new Container("#treeLayout");
+		    var g = treeLayout.canvas.append("g").attr("transform", "translate(75,0)");
+
+		    // declares a cluster layout and assigns the size (all leaps are going to the end)
+		    //var treemap = d3.cluster();
+			// declares a tree layout and assigns the size
+			var treemap = d3.tree();
+
+			treemap.size([treeLayout.height, treeLayout.width - 150]);
+
+			//  assigns the data to a hierarchy using parent-child relationships
+			var nodes = d3.hierarchy(treeData, function(d) {
+			    return d.children;
+			  });
+
+			// maps the node data to the tree layout
+			nodes = treemap(nodes);
+
+			// adds the links between the nodes - based https://bl.ocks.org/d3noob/08ecb6ea9bb68ba0d9a7e89f344acec8
+			/*var link = g.selectAll(".link")            // fill none stroke 2px #ccc
+			    .data( nodes.descendants().slice(1) )   // removing root
+			  .enter().append("path")
+			    .attr("class", "link")
+			    .style("stroke", function(d) { return d.data.level; })
+			    .attr("d", function(d) {				// This part replace linkHorizontal source target
+			       return "M" + d.y + "," + d.x
+			         + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+			         + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+			         + " " + d.parent.y + "," + d.parent.x;
+			       });*/
+
+			var link = g.selectAll(".link")       // based https://bl.ocks.org/mbostock/4339184
+						.data(nodes.links())
+						.enter().append("path")
+						  .attr("class", "link")
+						  .attr("d", d3.linkHorizontal()
+						      .x(function(d) { return d.y; })
+						      .y(function(d) { return d.x; }));
+
+			// adds each node as a group
+			var node = g.selectAll(".node")
+			    .data(nodes.descendants())
+			  	.enter().append("g")
+			    	.attr("transform", function(d) { 
+			      		return "translate(" + d.y + "," + d.x + ")"; });
+
+			loadData(g, node);
+
+			d3.selectAll("input").on("click", function change() {
+				event.stopPropagation();
+			});
+			d3.selectAll("input").on("change", function change() {
+				if ( this.value === "tree" ) {
+					treemap = d3.tree();
+				} else {
+					treemap = d3.cluster();
+				}
+				treemap.size([treeLayout.height, treeLayout.width - 150]);
+
+				var nodes = d3.hierarchy(treeData, function(d) {
+			    	return d.children;
+			  	});
+
+				nodes = treemap(nodes);
+
+				link.data(nodes.links())
+			      .transition()
+			        .duration(1500)
+				    .attr("d", d3.linkHorizontal()
+				      .x(function(d) { return d.y; })
+				      .y(function(d) { return d.x; }));
+
+				node.data(nodes.descendants())
+			      .transition()
+			        .duration(1500)
+			    	.attr("transform", function(d) { 
+			      		return "translate(" + d.y + "," + d.x + ")"; });
+			});
+		  });
+
+/*-------------------------------------Idea Video 16 scr d3 v4-------------------------------------------*/
+/*------------------------------ based https://bl.ocks.org/mbostock/4063530 -----------------------------*/
+
+	d3.json("data/treeData.json", function(error, packData) {
+
+			var packBubbleLayout = new Container("#pack-bubble-layout");
+
+			var pack = d3.pack()
+						.size([packBubbleLayout.height - 20, packBubbleLayout.width - 20])
+						.padding(10);
+
+			var nodes = d3.hierarchy(packData)
+			      .sum(function(d) { return d.age; });  // Radio proportion. This is mandatory to have all circles with the same dimentions change d.age by 1.
+
+			// maps the node data to the pack layout
+			nodes = pack(nodes);
+
+			var node = packBubbleLayout.canvas.append("g").attr("transform", "translate(10,10)").selectAll(null)
+						.data(nodes.descendants())
+						.enter()
+						.append("g")
+							.attr("transform", function(d){ return "translate(" + d.x + "," + d.y + ")"; });
+
+			node.append("circle")
+				.attr("class", "bubble")
+				.attr("r", function(d) { return d.r; } );
+
+			node.append("text")
+			  .attr("dy", ".35em")
+			  .attr("x", 0)
+			  .attr("y", function(d) {
+			  	return d.children ? -1 * d.r + 20 : 0;
+			  })
+			  .style("text-anchor", "middle")
+			  .text(function(d) { return d.data.name; });
+	});
+
+/*----------------------------------- Idea Video 17, 18 scr d3 v4 -----------------------------------------*/
+/*------------------------------- https://bl.ocks.org/mbostock/3048450 ------------------------------------*/
+
+	d3.csv("data/ages.csv", function(error, agesData) {
+		var map = agesData.map( function(d) { return parseInt(d.age); } );
+
+		color = d3.scaleOrdinal().range(d3.schemeCategory20c);
+
+		var histogram = new Container("#histogram");
+		var g = histogram.canvas.append("g").attr("transform", "translate(10, 10)");
+
+		var x = d3.scaleLinear()
+					.domain([0, 100])
+    				.range([0, histogram.width - 20]);
+
+		var bins = d3.histogram()
+				    .domain(x.domain())
+				    .thresholds(x.ticks(20))    // this .thresholds(x.ticks(20)) is bins(20) in youtube tutorial
+				    (map);
+
+		var y = d3.scaleLinear()
+		    .domain([0, d3.max(bins, function(d) { return d.length; })])
+		    .range([histogram.height - 40, 0]);
+
+		var bar = g.selectAll(".bar")
+		  .data(bins)
+		  .enter().append("g")
+		    .attr("class", "bar")
+		    .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; });
+
+		bar.append("rect")
+		    .attr("x", 1)
+		    .attr("width", x(bins[0].x1) - x(bins[0].x0) - 1)
+		    .attr("height", function(d) { return histogram.height - 40 - y(d.length); })
+		    .style("fill", "steelblue");
+
+		bar.append("text")
+		    .attr("dy", ".75em")
+		    .attr("y", 6)
+		    .attr("x", (x(bins[0].x1) - x(bins[0].x0)) / 2)
+		    .attr("text-anchor", "middle")
+		    .text(function(d) { return d.length; });
+
+		g.append("g")
+		    .attr("class", "axis axis--x")
+		    .attr("transform", "translate(0," + ( histogram.height - 40 ) + ")")
+		    .call(d3.axisBottom(x));
+		    
+	});
+
+/*----------------------------------- Idea Video 19 scr d3 v4 --------------------------------------*/
+/*----------------- https://bl.ocks.org/ganezasan/52fced34d2182483995f0ca3960fe228 -----------------*/
+	d3.json("data/treeData.json", function(error, treeData) {
+
+		var treemapLayout = new Container("#treemap");
+		var g = treemapLayout.canvas;
+		var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+
+		var treemap = d3.treemap()
+						.size([treemapLayout.width, treemapLayout.height]);
+
+		var nodes = d3.hierarchy( treeData, function(d) { return d.children } )
+		      .sum(function(d) { return d.age; });
+
+		var nodes = treemap(nodes);
+
+		var cells = g.selectAll(null)
+						.data(nodes.leaves())
+						.enter()
+						.append("g")
+						.attr("class", "cell");
+
+		cells.append("rect")
+		      .attr("x", function(d) { return d.x0; } )
+		      .attr("y", function(d) { return d.y0; } )
+		      .attr("width", function(d) { return Math.max(0, d.x1 - d.x0 - 1) } )
+		      .attr("height", function(d) { return Math.max(0, d.y1 - d.y0  - 1) } )
+		      .style("fill", function(d) { return color(d.parent.data.name); } );
+
+		cells.append("text")
+			  .text( function(d) { return d.data.name; } )
+			  .attr("text-anchor", "middle")
+		      .attr("x", function(d) { return d.x0 + (d.x1 - d.x0) / 2; } )
+		      .attr("y", function(d) { return d.y0 + (d.y1 - d.y0) / 2; } );
+	});
+
+/*----------------------------------- Idea Video 20 scr d3 v4 --------------------------------------*/
+/*--------------------- maps https://github.com/johan/world.geo.json -------------------------------*/
+
+	d3.json("data/COL.geo.json", function(error, geojson) {
+
+		var countryMap = new Container("#map");
+		var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+
+		var g = countryMap.canvas
+					.selectAll(null)
+					.data(geojson.features)
+					.enter()
+					.append("g").attr("transform", "translate(1850, 120)");
+
+		var projection = d3.geoMercator().scale(1650);
+
+	    var path = d3.geoPath()
+	      .projection(projection);
+
+		g.append("path")
+        	.attr("d", path)
+        	.style("fill", function(d) { return color(d.properties.NOMBRE_DPT); } )
+        	.style("opacity",".25")
+        	.attr("stroke","#d1d1d1")
+			.attr("stroke-width",1)
+        	;
+
+        g.append("text")
+           .attr("x", function(d) { return path.centroid(d)[0] })
+           .attr("y", function(d) { return path.centroid(d)[1] })
+           .attr("text-anchor", "middle")
+           .style("font-size","5px")
+           .text(function(d) { return d.properties.NOMBRE_DPT });
+	});
+
+/*------------------------------------------------------------------------------------------*/
+
+	d3.csv("data/ages.csv", function(error, data) {
+
+			var agesData = {
+							"name": "Max",
+							"age": 80,
+							"children": data
+						   };
+
+			var color = d3.scaleLinear()
+		               		.domain([0, 100])
+		               		.range(["#055", "#F55"]);
+
+			var extra = new Container("#extra");
+
+			var pack = d3.pack()
+						.size([extra.height - 20, extra.width - 20])
+						.padding(10);
+
+			var nodes = d3.hierarchy(agesData)
+			      .sum(function(d) { return d.age; });  // Radio proportion. This is mandatory to have all circles with the same dimentions change d.age by 1.
+
+			// maps the node data to the pack layout
+			nodes = pack(nodes);
+
+			var node = extra.canvas.append("g").attr("transform", "translate(10,10)").selectAll(null)
+						.data(nodes.leaves())
+						.enter()
+						.append("g")
+							.attr("transform", function(d){ return "translate(" + d.x + "," + d.y + ")"; });
+
+			node.append("circle")
+				.attr("class", "bubble")
+				.style("fill", function(d) { return color(d.data.age); } )
+				.attr("r", function(d) { return d.r; } );
+
+			node.append("text")
+			  .attr("dy", ".35em")
+			  .attr("x", 0)
+			  .attr("y", function(d) {
+			  	return d.children ? -1 * d.r + 20 : 0;
+			  })
+			  .style("text-anchor", "middle")
+			  .style("font-size","6px")
+			  .text(function(d) { return d.data.age; });
+	});
+	</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+	"name": "Max",
+	"age": 80,
+	"children": [
+	{
+		"name": "Maria",
+		"age": 50,
+		"children": [
+			{"name":"Juan","age": 20},
+			{"name":"Pedro","age": 25},
+			{"name":"Pablo","age": 17}
+		]
+	},
+	{
+		"name": "David",
+		"age": 35,
+		"children": [
+			{"name":"Jesus","age": 5},
+			{"name":"Jose","age": 9}
+		]
+	},
+	{
+		"name": "Carlos",
+		"age": 43
+	}
+	]
+}
