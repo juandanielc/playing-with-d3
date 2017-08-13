@@ -37,7 +37,7 @@
 	</style>
 </head>
 <body>
-	<h2>Based in this tutorials <a href="https://www.youtube.com/watch?v=n5NcCoa9dDU&list=PL6il2r9i3BqH9PmbOf5wA5E1wOG3FT22p" target="_blank">open tutorial here</a> rewritten in v4</h2>
+	<h2>Based on this tutorial <a href="https://www.youtube.com/watch?v=n5NcCoa9dDU&list=PL6il2r9i3BqH9PmbOf5wA5E1wOG3FT22p" target="_blank">open tutorial here</a> rewritten in v4</h2>
 	<p><strong>Click on a square to expand it</strong></p>
 
 	<div id="extra"></div>
@@ -77,7 +77,7 @@
 					   .attr("data-scale", this.scale)
 					   .on("click", 
 					   		function() {
-								event.stopPropagation();
+								d3.event.stopPropagation();
 								$( "div" ).each(function( index ) {
 								  if( "#" + $(this).attr('id') == target ){
 								  	var scale = $(target).data('scale') == self.scaleMin ? ( self.scaleMax * (target == '#map' || target == '#extra' ? 2 : 1) ) : self.scaleMin;
@@ -239,7 +239,7 @@
 		     .on('click',transition);
 
 		function transition() {
-			event.stopPropagation();
+			d3.event.stopPropagation();
 
 			start.transition()
 				.duration(1000)
@@ -529,7 +529,7 @@
 			loadData(g, node);
 
 			d3.selectAll("input").on("click", function change() {
-				event.stopPropagation();
+				d3.event.stopPropagation();
 			});
 			d3.selectAll("input").on("change", function change() {
 				if ( this.value === "tree" ) {
